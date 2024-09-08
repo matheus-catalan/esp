@@ -1,0 +1,31 @@
+{
+  "name": "dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "nuxt",
+    "build": "nuxt build",
+    "start": "nuxt start",
+    "generate": "nuxt generate"
+  },
+  "dependencies": {
+    "@nuxtjs/axios": "^5.13.6",
+    "@nuxtjs/toast": "^3.3.1",
+    "@tresjs/nuxt": "^3.0.3",
+    "chart.js": "^3.8.0",
+    "core-js": "^3.25.3",
+    "nuxt": "^2.15.8",
+    "nuxt-socket-io": "^2.0.3",
+    "three": "^0.167.1",
+    "vue": "^2.7.10",
+    "vue-chartjs": "^4.0.0",
+    "vue-server-renderer": "^2.7.10",
+    "vue-template-compiler": "^2.7.10",
+    "vue-toastification": "^1.7.14",
+    "vuetify": "^2.6.10",
+    "vuexfire": "^3.2.5"
+  },
+  "devDependencies": {
+    "@nuxtjs/vuetify": "^1.12.3"
+  }
+}
