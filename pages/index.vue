@@ -1,6 +1,6 @@
 <template>
   <v-container fluid>
-    <NavBar :name="`Dashboard`" />
+    <NavBar :name="`Dashboard`" :show_updated_at="true" />
 
     <v-row>
       <v-col cols="8" fill-height class="d-flex justify-center">
@@ -70,7 +70,7 @@
 
                   <v-list-item-content>
                     <v-list-item-title>
-                      {{ item.value }} {{ item.sensor.unit }}
+                      {{ $formatNumber(item.value, item.sensor.key) }} {{ item.sensor.unit }}
                     </v-list-item-title>
                   </v-list-item-content>
 
@@ -89,41 +89,116 @@
       </v-col>
     </v-row>
     <v-row>
-      <v-col cols="12" class="pr-3">
+      <v-col cols="6" class="pr-3">
         <v-card class="p-0 pr-1" rounded="lg">
-          <v-card-title>
-            Temperatura e humidade
+          <v-card-title style="margin-bottom: 0px; padding-bottom: 0px;">
+            Temperatura
             <v-spacer></v-spacer>
-            <v-select v-model="interval_temp" :items="intervals" item-text="name" item-value="value"
-              style="width: 50px;" filled rounded dense hide-details></v-select>
           </v-card-title>
-          <v-card-text class="my-4 d-flex align-center justify-center" style="color: black; width: 100%;">
+          <v-card-text class="d-flex align-center justify-center" style="color: black; width: 100%;">
             <div style="width: 100%;">
               <client-only placeholder="Loading...">
-                <line-chart :chart-data="temperatureDataset" :height="50" :width="null" chart-id="lineChart" />
-              </client-only>
-            </div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-      <!-- <v-col cols="6" class="pl-3">
-        <v-card class="p-0 pl-1" rounded="lg">
-          <v-card-text class="my-4 d-flex align-center justify-center" style="color: black; width: 100%;">
-            <div style="width: 100%;">
-              <client-only placeholder="Loading...">
-                <line-chart :chart-data="dataset_2" :options="options" :height="100" :width="null"
+                <line-chart :chart-data="datasets.temperature" :height="150" :options="optionsChart" :width="null"
                   chart-id="lineChart" />
               </client-only>
             </div>
           </v-card-text>
         </v-card>
-      </v-col> -->
+      </v-col>
+      <v-col cols="6" class="pr-3">
+        <v-card class="p-0 pr-1" rounded="lg">
+          <v-card-title style="margin-bottom: 0px; padding-bottom: 0px;">
+            Humidade
+            <v-spacer></v-spacer>
+          </v-card-title>
+          <v-card-text class="d-flex align-center justify-center" style="color: black; width: 100%;">
+            <div style="width: 100%;">
+              <client-only placeholder="Loading...">
+                <line-chart :chart-data="datasets.humidity" :height="150" :options="optionsChart" :width="null"
+                  chart-id="lineChart" />
+              </client-only>
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+    <v-row>
+      <v-col cols="6" class="pr-3">
+        <v-card class="p-0 pr-1" rounded="lg">
+          <v-card-title style="margin-bottom: 0px; padding-bottom: 0px;">
+            Gases
+            <v-spacer></v-spacer>
+          </v-card-title>
+          <v-card-text class="d-flex align-center justify-center" style="color: black; width: 100%;">
+            <div style="width: 100%;">
+              <client-only placeholder="Loading...">
+                <line-chart :chart-data="datasets.mq2" :height="150" :options="optionsChart" :width="null"
+                  chart-id="lineChart" />
+              </client-only>
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+      <v-col cols="6" class="pr-3">
+        <v-card class="p-0 pr-1" rounded="lg">
+          <v-card-title style="margin-bottom: 0px; padding-bottom: 0px;">
+            <span>
+              Luminosidade
+              <span class="text-caption">ultimos 30 registros</span>
+            </span>
+            <v-spacer></v-spacer>
+          </v-card-title>
+          <v-card-text class="d-flex align-center justify-center" style="color: black; width: 100%;">
+            <div style="width: 100%;">
+              <client-only placeholder="Loading...">
+                <line-chart :chart-data="datasets.ldr" :height="150" :options="optionsChart" :width="null"
+                  chart-id="lineChart" />
+              </client-only>
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+      <v-col cols="6" class="pr-3">
+        <v-card class="p-0 pr-1" rounded="lg">
+          <v-card-title style="margin-bottom: 0px; padding-bottom: 0px;">
+            Ruído
+            <v-spacer></v-spacer>
+            <span class="text-caption">ultimos 30 registros</span>
+          </v-card-title>
+          <v-card-text class="d-flex align-center justify-center" style="color: black; width: 100%;">
+            <div style="width: 100%;">
+              <client-only placeholder="Loading...">
+                <line-chart :chart-data="datasets.noise" :height="150" :options="optionsChart" :width="null"
+                  chart-id="lineChart" />
+              </client-only>
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+      <v-col cols="6" class="pr-3">
+        <v-card class="p-0 pr-1" rounded="lg">
+          <v-card-title style="margin-bottom: 0px; padding-bottom: 0px;">
+
+            Presença
+            <v-spacer></v-spacer>
+            <span class="text-caption">ultimos 30 registros</span>
+          </v-card-title>
+          <v-card-text class="d-flex align-center justify-center" style="color: black; width: 100%;">
+            <div style="width: 100%;">
+              <client-only placeholder="Loading...">
+                <line-chart :chart-data="datasets.presence" :height="150" :options="optionsChart" :width="null"
+                  chart-id="lineChart" />
+              </client-only>
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
     </v-row>
     <v-row>
       <v-col cols="8">
         <v-row>
           <template v-for="(sensor, key) in sensors">
-            <v-col cols="3" v-if="sensor.is_internal" :key="key">
+            <v-col cols="4" v-if="sensor.is_internal" :key="key">
               <v-card class="" rounded="lg" style="height: 100%;">
                 <v-list subheader two-line style="padding-bottom: 0px;">
                   <v-list-item style="padding-left: 10px; padding-right: 10px;">
@@ -159,57 +234,31 @@
 
       <v-col cols="4">
         <v-card class="p-0" rounded="lg" style="height: 100%;">
-          <v-card-title class="d-flex align-center justify-center">
+          <v-card-title class="d-flex align-center justify-center" style="margin-bottom: 0px; padding-bottom: 0px">
             Sistema de notificação
           </v-card-title>
-          <v-card-text class="my-4 d-flex align-center justify-center text-h5" style="color: black;">
+          <v-card-text class="mt-3 d-flex align-center justify-center text-h5" style="color: black;">
             <v-row>
-              <v-col cols="4" class="d-flex flex-column align-center justify-center text-center text-h6">
-                <v-icon large color="black">mdi-volume-high</v-icon>
+              <v-col cols="4" class="d-flex flex-column align-center justify-center text-center text-subtitle-1">
+                <v-icon color="black">mdi-volume-high</v-icon>
                 <span>Sonoro</span>
-                <span style="color: green;">Ativo</span>
+                <span style="color: green;">{{ environment.sound_alert ? 'Ligado' : 'desligado' }}</span>
               </v-col>
-              <v-col cols="4" class="d-flex flex-column align-center justify-center text-center text-h6">
-                <v-icon large color="black">mdi-alarm-light</v-icon>
+              <v-col cols="4" class="d-flex flex-column align-center justify-center text-center text-subtitle-1">
+                <v-icon color="black">mdi-alarm-light</v-icon>
                 <span>Luminoso</span>
-                <span style="color: green;">Ativo</span>
+                <span style="color: green;">{{ environment.light_alert ? 'Ligado' : 'desligado' }}</span>
               </v-col>
-              <v-col cols="4" class="d-flex flex-column align-center justify-center text-center text-h6">
-                <v-icon large color="black">mdi-bell</v-icon>
+              <v-col cols="4" class="d-flex flex-column align-center justify-center text-center text-subtitle-1">
+                <v-icon color="black">mdi-bell</v-icon>
                 <span>Notificação</span>
-                <span style="color: green;">Ativo</span>
+                <span style="color: green;">{{ environment.notification_alert ? 'Ligado' : 'desligado' }}</span>
               </v-col>
             </v-row>
           </v-card-text>
         </v-card>
       </v-col>
     </v-row>
-
-    <!-- <v-row>
-      <v-col cols="12">
-        <v-data-table :headers="headers" :items="histories" item-value="sensor.updatedAt" class="elevation-1">
-          <template v-slot:item.icon="{ item }">
-            <v-avatar size="56" class="white--text">
-              <v-icon>{{ item.sensor.icon }}</v-icon>
-            </v-avatar>
-          </template>
-
-          <template v-slot:item.value="{ item }">
-            {{ item.value }} {{ item.sensor.unit }}
-          </template>
-
-          <template v-slot:item.updatedAt="{ item }">
-            {{ $formatDate(item.sensor.updatedAt) }}
-          </template>
-
-          <template v-slot:no-data>
-            <v-alert :value="true" type="info" color="blue-grey">
-              Nenhum dado disponível
-            </v-alert>
-          </template>
-        </v-data-table>
-      </v-col>
-    </v-row> -->
 
   </v-container>
 </template>
@@ -224,11 +273,22 @@ export default {
       sensors: [],
       environment: {},
       histories: [],
-      histories_full: [],
-      wifi: {},
-      datasets: [],
-      interval_temp: 'second',
-      intervals: [{ name: 'por segundo', value: 'second' }, { name: 'por minuto', value: 'minute' }, { name: 'por hora', value: 'hourly' }, { name: 'por dia', value: 'day' }],
+      socket: undefined,
+      optionsChart: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: false
+        },
+      },
+      datasets: {
+        temperature: { labels: [], datasets: [{ data: [] }] },
+        humidity: { labels: [], datasets: [{ data: [] }] },
+        mq2: { labels: [], datasets: [{ data: [] }] },
+        ldr: { labels: [], datasets: [{ data: [] }] },
+        noise: { labels: [], datasets: [{ data: [] }] },
+        presence: { labels: [], datasets: [{ data: [] }] }
+      },
     }
   },
   async mounted() {
@@ -236,19 +296,32 @@ export default {
     this.loading_enviroment = true;
     await this.getEnvironments();
     await this.setEnvironment();
-    this.socket = io('http://localhost:8001');
-    this.socket.emit('joinEnvironment', this.environment.key);
-    this.getHistory();
-
-    this.socket.on('environmentUpdated', (data) => {
-      if (data) {
-        this.setSensor(data.sensor);
-        this.getHistory();
-      }
-    });
+    this.socket = io(this.$config.sockerUrl);
+    this.handlingSocket();
+    this.getAllHistories();
   },
   methods: {
-    setSensor(sensor) {
+    handlingSocket() {
+      if (this.socket == undefined) return
+      this.socket.emit('joinEnvironment', this.environment.key);
+      this.socket.on('environmentUpdated', (data) => {
+        if (data) {
+          this.setSensor(data);
+          this.getAllHistories();
+        }
+      });
+    },
+    async getAllHistories() {
+      await this.$axios
+        .get(`environments/${this.environment.id}/histories`)
+        .then((response) => {
+          this.histories = response.data;
+        })
+        .catch((error) => {
+          this.$toast.error('Erro ao buscar histórico');
+        });
+    },
+    async setSensor(sensor) {
       if (sensor == undefined) return
       let s = this.sensors.find((s) => s.key == sensor.key);
       if (!s) {
@@ -258,22 +331,16 @@ export default {
       s.current_value = sensor.current_value;
       s.updatedAt = sensor.updatedAt;
       s.status = sensor.status;
-
+      await this.getHistory(sensor);
     },
-    getWifiSensor() {
-      let a = this.sensors.find((sensor) => sensor.key == 'wifi');
-      if (a) return a
-      return {}
-    },
-    getHistory() {
+    getHistory(sensor) {
       this.$axios
-        .get(`/environments/${this.environment.id}/histories`)
+        .get(`/sensors/${sensor.id}/histories`)
         .then((response) => {
-          this.histories = response.data.histories;
-          this.datasets = response.data.datasets;
-          console.log("this.datasets", this.datasets)
+          this.datasets[sensor.key] = response.data.datasets;
         })
         .catch((error) => {
+          console.log(error)
         });
     },
     async getEnvironments() {
@@ -288,6 +355,8 @@ export default {
         });
     },
     setEnvironment() {
+      if (this.environments == undefined) return
+
       this.environment = this.environments.find((env) => {
         if (env.id == this.$store.state.environments.env_current) {
           return env
@@ -304,7 +373,9 @@ export default {
           if (this.sensors == response.data.sensors) return
 
           this.sensors = response.data.sensors;
-          this.wifi = this.getWifiSensor();
+          this.sensors.forEach((sensor) => {
+            this.getHistory(sensor);
+          });
         })
         .catch((error) => {
           this.loading_sensor = false;
@@ -319,21 +390,21 @@ export default {
       const dataset = { labels: [], datasets: [{ data: [] }] }
 
       if (this.datasets.temperature) {
-        return this.datasets.temperature[this.interval_temp]
+        return this.datasets.temperature
       }
 
       return dataset
     }
   },
   beforeDestroy() {
-    if (this.messageRef) {
-      this.messageRef.off('value', this.handleHistoryChange);
-    }
+    this.socket.disconnect();
   },
   watch: {
-    interval_temp(oldValue, newValue) {
-      console.log(this.interval_temp)
-      //this.getHistory();
+    '$store.state.environments.env_current'(newValue, oldValue) {
+      this.getEnvironments();
+      this.setEnvironment();
+      this.handlingSocket();
+      this.getSensors();
     }
   }
 }

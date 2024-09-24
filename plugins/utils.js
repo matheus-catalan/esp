@@ -120,6 +120,10 @@ export default ({ app }, inject) => {
       return parseFloat(number).toFixed(2)
     }
 
+    if (key == 'mq2') {
+      return parseFloat(number).toFixed(3)
+    }
+
     let n = parseFloat(number);
     if (isNaN(n)) {
       return 0;

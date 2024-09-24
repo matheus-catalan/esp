@@ -1,14 +1,11 @@
 <template>
-  <v-card class="p-0 " rounded="lg" style="height: 100%;" :color="sensor.status ? 'white' : 'error'">
+  <v-card class="p-0 " rounded="lg" style="height: 100%;" :color="sensor.status ? 'white' : 'error'" loading>
     <v-card-title>
       {{ sensor.name }}
 
       <v-spacer></v-spacer>
       <v-icon large color="black">{{ $getIconBySensor(sensor.key) }}</v-icon>
     </v-card-title>
-    <v-card-subtitle class="pb-0">
-
-    </v-card-subtitle>
     <v-card-subtitle class="mt-0 pt-0 pb-0">
       <v-tooltip bottom>
         <template v-slot:activator="{ on, attrs }">
@@ -16,7 +13,7 @@
             <v-icon left small>
               mdi-update
             </v-icon>
-            {{ $formatNumber(sensor.current_value) }} {{ sensor.unit }}
+            {{ $formatNumber(sensor.current_value, sensor.key) }} {{ sensor.unit }}
           </v-chip>
         </template>
         <span>Ultima atualização </span>
@@ -44,8 +41,11 @@
         <span>Sensor {{ sensor.status ? ' ok' : ' com erro' }}</span>
       </v-tooltip>
     </v-card-subtitle>
-    <v-divider class="my-1"></v-divider>
-    <v-card-text class="my-4 ">
+    <v-divider class="mt-1"></v-divider>
+    <div style="  height: 4px; position: relative;">
+      <v-progress-linear indeterminate rounded v-show="is_loading"></v-progress-linear>
+    </div>
+    <v-card-text class="my-4">
       <v-row class="d-flex align-center justify-center" fill-height>
         <v-col cols="4" class="d-flex align-center justify-center flex-column"
           style="margin-top:0; padding-top:0;margin-bottom:0; padding-bottom:0;">
@@ -87,7 +87,7 @@
 import io from 'socket.io-client';
 
 export default {
-  props: ['sensor_temp'],
+  props: ['sensor_temp', 'is_loading'],
   data() {
     return {
       loading: false,
@@ -97,12 +97,11 @@ export default {
   },
   mounted() {
     this.sensor = this.sensor_temp;
-    this.socket = io('http://localhost:8001');
+    this.socket = io(this.$config.sockerUrl);
     this.socket.emit('joinSensor', this.sensor.id);
     this.socket.on('sensorUpdated', (data) => {
       this.is_loading = true;
       if (data) {
-        console.log(data);
         this.sensor = data;
       }
 

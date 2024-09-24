@@ -1,6 +1,6 @@
 <template>
-  <v-row no-gutters align="center">
-    <v-col cols="1">
+  <v-row no-gutters align="center" style="display: flex; align-items: center; justify-content: space-between;">
+    <div cols="1">
       <v-card class="px-2 py-1 d-flex align-center justify-center" rounded="lg" v-if="loading">
         <v-progress-circular indeterminate></v-progress-circular>
       </v-card>
@@ -32,20 +32,20 @@
                   <v-row no-gutters align="center" style="height: 100%;">
                     <v-col cols="4" style="display: flex; align-items: center; justify-content: center;">
                       <v-btn icon>
-                        <v-icon dark :color="status(item?.updatedAt) ? 'blue' : 'red'">mdi-database</v-icon>
+                        <v-icon dark :color="item.status ? 'blue' : 'red'">mdi-database</v-icon>
                       </v-btn>
                     </v-col>
 
                     <v-col cols="4" style="display: flex; align-items: center; justify-content: center;">
                       <v-btn icon>
-                        <v-icon dark :color="status(item?.updatedAt) ? 'blue' : 'red'">mdi-border-none</v-icon>
+                        <v-icon dark :color="item.status ? 'blue' : 'red'">mdi-border-none</v-icon>
 
                       </v-btn>
                     </v-col>
 
                     <v-col cols="4" style="display: flex; align-items: center; justify-content: center;">
                       <v-btn icon>
-                        <v-icon dark :color="status(item?.updatedAt) ? 'blue' : 'red'">mdi-database</v-icon>
+                        <v-icon dark :color="item.status ? 'blue' : 'red'">mdi-database</v-icon>
                       </v-btn>
                     </v-col>
                   </v-row>
@@ -56,43 +56,24 @@
           </v-list>
         </v-card>
       </v-menu>
-    </v-col>
+    </div>
 
-    <v-col cols="9" class="text-center">
+    <div cols="8" class="text-center">
       <h2>{{ this.name }}</h2>
-    </v-col>
+    </div>
 
-    <v-col cols="2">
-      <v-card class="px-2 py-1 d-flex align-center justify-center" rounded="lg" v-if="loading">
-        <v-progress-circular indeterminate></v-progress-circular>
+    <div cols="3" v-if="show_updated_at" class="d-flex flex-row align-center justify-center">
+      <Notification ref="notification" />
+      <v-card class="ml-5 px-2 py-2 text-center text-subtitle-1" :rounded="show_updated ? 'lg' : 'circle'"
+        :color="environment.status ? 'success' : 'blue'" @click="show_updated = !show_updated">
+        <v-icon :class="{
+          'rotate-animation': loading_update
+        }" class="px-1">
+          {{ loading_update ? 'mdi-refresh' : 'mdi-update' }}
+        </v-icon>
+        <span v-if="show_updated"> {{ $formatDate(environment.updatedAt) }}</span>
       </v-card>
-      <v-card class="px-2 py-2 text-center text-subtitle-1" rounded="lg" :color="environment.status ? 'success' : 'red'"
-        v-else>
-        <v-icon>mdi-update</v-icon>
-        <span> {{ $formatDate(environment.updatedAt) }}</span>
-      </v-card>
-    </v-col>
-
-    <!-- <v-col cols="1" class="pl-1">
-      <v-card class="px-2 py-1 d-flex align-center justify-center" rounded="lg" v-if="loading">
-        <v-progress-circular indeterminate></v-progress-circular>
-      </v-card>
-      <v-card class="p-0" rounded="lg" style="height: 100%;" v-else>
-        <v-row no-gutters class="py-2" align="center" style="height: 100%;">
-          <v-col cols="4" style="display: flex; align-items: center; justify-content: center;">
-            <v-icon dark :color="environment.status ? 'blue' : 'red'">mdi-database</v-icon>
-          </v-col>
-
-          <v-col cols="4" style="display: flex; align-items: center; justify-content: center;">
-            <v-icon dark :color="status(environment?.updatedAt) ? 'blue' : 'red'">mdi-border-none</v-icon>
-          </v-col>
-
-          <v-col cols="4" style="display: flex; align-items: center; justify-content: center;">
-            <v-icon dark :color="status(environment?.updatedAt) ? 'blue' : 'red'">mdi-wifi</v-icon>
-          </v-col>
-        </v-row>
-      </v-card>
-    </v-col> -->
+    </div>
   </v-row>
 </template>
 <script>
@@ -100,33 +81,44 @@ import io from 'socket.io-client';
 export default {
 
   props: {
-    name: String
+    name: String,
+    show_updated_at: Boolean
   },
   name: 'NavBar',
   data() {
     return {
+      show_updated: false,
       menu: false,
       loading: false,
       socket: null,
       environments: [],
-      environment: {}
+      environment: {},
+      socket: null,
+      loading_update: false
     }
   },
   async mounted() {
     await this.getEnvironments();
-    this.socket = io.connect('http://localhost:8001');
-    this.socket.emit('joinEnvironment', this.environment.key);
-
-    this.socket.on('environmentUpdated', (data) => {
-      this.is_loading = true;
-      if (data) {
-        this.getEnvironments();
-      }
-
-      this.is_loading = false;
-    });
+    this.socket = io(this.$config.sockerUrl);
+    this.handlingSocket();
   },
   methods: {
+    handlingSocket() {
+      if (this.socket == undefined) return
+      this.environments.forEach((env) => {
+        this.socket.emit('joinEnvironment', env.key);
+      });
+      this.socket.emit('joinEnvironment', this.environment.key);
+      this.socket.on('environmentUpdated', (data) => {
+        if (data) {
+          if (this.environment?.id == data.environment?.id) {
+            this.loadingUpdate(data)
+          }
+          this.$refs.notification?.getNotifications();
+          this.getEnvironments();
+        }
+      });
+    },
     async getEnvironments() {
       await this.$axios
         .get(`/environments`)
@@ -148,6 +140,7 @@ export default {
         this.environment = this.environments[0]
         this.$store.commit('environments/setCurrentEnvironment', this.environment.id)
       }
+
     },
     status(date) {
       let now = new Date()
@@ -164,7 +157,28 @@ export default {
       this.$store.commit('environments/setCurrentEnvironment', item.id)
       this.environment = item
     },
+    loadingUpdate() {
+      this.loading_update = true;
+      setTimeout(() => {
+        this.loading_update = false;
+      }, 500);
+    }
   },
 
 }
 </script>
+<style>
+.rotate-animation {
+  animation: spin 0.5s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+</style>

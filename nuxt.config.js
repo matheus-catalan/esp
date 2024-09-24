@@ -21,10 +21,12 @@ export default {
 
   css: [
   ],
+  loading: false,
+
 
   plugins: [
     { src: '~/plugins/chart.js', mode: 'client' },
-    '~/plugins/utils.js'
+    '~/plugins/utils.js',
   ],
 
   components: true,
@@ -46,13 +48,10 @@ export default {
   ],
 
   axios: {
-    baseURL: 'http://localhost:8000',
+    baseURL: process.env.BASE_URL,
   },
-  io: {
-    sockets: [{
-      name: '',
-      url: 'http://localhost:8000'
-    }]
+  publicRuntimeConfig: {
+    sockerUrl: process.env.SOCKET_URL,
   },
   vuetify: {
     customVariables: ['~/assets/variables.scss'],

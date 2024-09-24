@@ -1,17 +1,20 @@
 <template>
   <v-container fluid>
-    <NavBar :name="`Configurações`" />
+    <NavBar :name="`Configurações`" :show_updated_at="true" />
     <v-row>
       <v-col cols="12" v-if="loading_sensor">
         <v-row>
           <v-col v-for="i in 6" cols="4">
-            <v-skeleton-loader class="mx-auto" max-width="300" type="card"></v-skeleton-loader>
+            <v-skeleton-loader :key="i" class="mx-auto" max-width="300" type="card"></v-skeleton-loader>
           </v-col>
         </v-row>
       </v-col>
-      <v-col cols="4" v-for="(sensor, key) in sensors" :key="key" v-else>
-        <CardSensor :sensor_temp="sensor" />
-      </v-col>
+      <template v-for="(sensor) in sensors" v-else>
+
+        <v-col cols="4" v-if="!sensor.is_internal">
+          <CardSensor :sensor_temp="sensor" :is_loading="loadingStatus[sensor.key]" :key="sensor.name" />
+        </v-col>
+      </template>
 
       <v-col cols="12" v-if="loading_enviroment">
         <v-row>
@@ -78,7 +81,6 @@
 </template>
 <script>
 import io from 'socket.io-client';
-import CardSensor from '../components/CardSensor.vue';
 
 export default {
   name: 'index',
@@ -88,8 +90,9 @@ export default {
       loading_enviroment: true,
       sensors: [],
       environments: [],
-      environment: {}
-
+      environment: {},
+      loadingStatus: {},
+      socket: undefined,
     }
   },
   async mounted() {
@@ -97,25 +100,41 @@ export default {
     this.loading_enviroment = true;
     await this.getEnvironments();
     await this.setEnvironment();
-    this.socket = io('http://localhost:8001');
-    this.socket.emit('joinEnvironment', this.environment.key);
-    this.socket.on('environmentUpdated', (data) => {
-      this.is_loading = true;
-      if (data) {
-        this.sensors = data.sensors;
-        // this.getSensors();
-      }
-
-      this.is_loading = false;
-    });
+    this.socket = io(this.$config.sockerUrl);
+    this.handlingSocket();
   },
   methods: {
+    handlingSocket() {
+      if (this.socket == undefined) return
+      this.socket.disconnect();
+      this.socket.connect();
+      this.socket.emit('joinEnvironment', this.environment.key);
+      this.socket.on('environmentUpdated', (data) => {
+        if (data) {
+          this.setSensor(data);
+        }
+      });
+    },
+    setSensor(sensor) {
+      if (sensor == undefined) return
+      this.$set(this.loadingStatus, sensor.key, true);
+      let s = this.sensors.find((s) => s.key == sensor.key);
+      if (!s) {
+        return;
+      }
+
+      s.current_value = sensor.current_value;
+      s.updatedAt = sensor.updatedAt;
+      s.status = sensor.status;
+      setTimeout(() => {
+        this.$set(this.loadingStatus, sensor.key, false);
+      }, 500);
+    },
     async getEnvironments() {
       await this.$axios
         .get(`/environments`)
         .then((response) => {
           this.environments = response.data;
-          console.log(this.environments)
           this.setEnvironment()
           this.getSensors();
         })
@@ -138,6 +157,10 @@ export default {
           this.loading_sensor = false;
           this.loading_enviroment = false;
           this.sensors = response.data.sensors;
+          this.sensors.forEach(sensor => {
+            this.$set(this.loadingStatus, sensor.key, true);
+            this.$set(this.loadingStatus, sensor.key, false);
+          });
         })
         .catch((error) => {
           this.loading_sensor = false;
@@ -161,57 +184,6 @@ export default {
           this.$toast.error('Erro ao alterar valor');
         });
     },
-    getIconSesnsor(key) {
-      return {
-        'temperature': 'mdi-thermometer',
-        'humidity': 'mdi-water',
-        'pressure': 'mdi-gauge',
-        'ldr': 'mdi-brightness-6',
-        'presence': 'mdi-run-fast',
-        'mq2': 'mdi-gas-burner',
-        'noise': 'mdi-volume-high',
-        'wifi': 'mdi-wifi',
-      }[key] || ''
-    },
-    getUnitBySensor(name) {
-      return {
-        'temperature': '°C',
-        'humidity': '%',
-        'lumi': 'lux',
-        'mq2': 'ppm',
-        'ldr': 'lux',
-        'presence': '',
-        'noise': 'dB',
-      }[name] || '';
-    },
-    getRangeBySensor(key) {
-      return {
-        'temperature': [-50, 90],
-        'humidity': [0, 100],
-        'pressure': [0, 100],
-        'ldr': [0, 100],
-        'presence': [0, 1],
-        'mq2': [0, 100],
-        'noise': [0, 100],
-        'wifi': [0, 100],
-      }[key] || [0, 100]
-    },
-    getIcon(item) {
-      if (item.status === undefined) {
-
-        return ''
-      }
-
-      return item.status ? { icon: 'mdi-check-circle', color: 'green' } : { icon: 'mdi-alert-circle', color: 'red' };
-    },
-    FormatDate(date) {
-      let d = new Date(date).toLocaleString();
-      if (d !== 'Invalid Date') {
-        return d;
-      }
-
-      return '-'
-    }
   },
   computed: {
     env_selected() {
@@ -220,15 +192,10 @@ export default {
   },
   watch: {
     '$store.state.environments.env_current'(newValue, oldValue) {
-      //   this.loading_enviroment = true;
-      //   this.loading_sensor = true;
-      if (newValue != oldValue) {
-
-        this.setEnvironment()
-        this.getSensors()
-      }
-      //   this.loading_enviroment = false;
-      //   this.loading_sensor = false;
+      this.getEnvironments();
+      this.setEnvironment();
+      this.handlingSocket();
+      this.getSensors();
     }
   },
   beforeDestroy() {

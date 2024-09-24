@@ -15,43 +15,75 @@
             </v-chip>
           </template>
           <v-row>
-            <v-chip small v-for="(sensor, key) in environment.sensors" :color="getColor(sensor)" style="color: black"
-              class="mx-1">
+            <template v-for="(sensor, key) in sensors">
+              <v-chip small :color="getColor(sensor)" style="color: black" class="mx-1">
 
-              <v-icon small>{{ $getIconBySensor(sensor.key) }}</v-icon>
-              <span v-if="key === 'presence'">
-                {{ sensor?.current_value ? 'Dectado' : 'Não detectado' }}
-              </span>
-              <span v-else>
-                {{ $formatNumber(sensor?.current_value) }} {{ sensor.unit }}
-              </span>
-            </v-chip>
+                <v-icon small>{{ $getIconBySensor(sensor.key) }}</v-icon>
+                <span>
+                  {{ $formatNumber(sensor?.current_value, sensor.key) }} {{ sensor.unit }}
+                </span>
+              </v-chip>
+            </template>
 
           </v-row>
         </v-tooltip>
       </template>
       <v-row no-gutters class="flex-wrap">
-        <v-col cols="" class="" v-for="(sensor, key) in environment.sensors">
-          <v-card class="ma-1" rounded="lg" :loading="is_loading">
-            <v-card-title>
-              {{ sensor.name }}
-              <v-spacer></v-spacer>
-              <v-icon large color="black">{{ $getIconBySensor(sensor.key) }}</v-icon>
-            </v-card-title>
-            <v-card-text class="my-4 d-flex align-center justify-center text-h4" style="color: black;">
-              <span v-if="key === 'presence'" class="text-h4">
-                {{ sensor?.current_value ? 'Dectado' : 'Não detec..' }}
-              </span>
-              <span v-else>
-                {{ $formatNumber(sensor?.current_value) }} {{ sensor.unit }}
-              </span>
-            </v-card-text>
-            <v-card-actions class="text-caption m-0 p-0">
-              Ultima atualização: {{ $formatDate(sensor?.updatedAt) }}
-            </v-card-actions>
-          </v-card>
+        <template v-for="(sensor, key) in sensors">
+          <v-col cols="2" class="" v-if="!sensor.is_internal">
+            <v-card class="ma-1" rounded="lg" :loading="is_loading">
+              <v-card-title>
+                {{ sensor.name }}
+                <v-spacer></v-spacer>
+                <v-icon large color="black">{{ $getIconBySensor(sensor.key) }}</v-icon>
+              </v-card-title>
+              <v-card-text class="my-4 d-flex align-center justify-center text-h5" style="color: black;">
+                <span>
+                  {{ $formatNumber(sensor.current_value, sensor.key) }} {{ sensor.unit }}
+                </span>
+              </v-card-text>
+              <v-card-actions class="text-caption m-0 p-0">
+                Ultima atualização: {{ $formatDate(sensor?.updatedAt) }}
+              </v-card-actions>
+            </v-card>
+          </v-col>
+        </template>
+      </v-row>
+      <v-row>
+        <v-col cols="4">
+          <template v-for="(sensor, key) in sensors">
+            <v-col cols="12" v-if="sensor.is_internal" :key="key">
+              <v-card class="" rounded="lg" style="height: 100%;">
+                <v-list subheader two-line style="padding-bottom: 0px;">
+                  <v-list-item style="padding-left: 10px; padding-right: 10px;">
+                    <v-list-item-avatar size="30">
+                      <v-icon small class="grey lighten-1">{{ $getIconBySensor(sensor.key) }}</v-icon>
+                    </v-list-item-avatar>
+                    <v-list-item-content>
+                      <v-list-item-title>{{ sensor.name }}</v-list-item-title>
+                      <v-list-item-subtitle v-if="sensor.key != 'ip'">
+                        {{ $formatNumber(sensor.current_value, sensor.key) }} {{ sensor.unit }}
+                      </v-list-item-subtitle>
+                      <v-list-item-subtitle v-else>
+                        <a :href="`http://${sensor.current_value}`" target="_blank">{{ sensor.current_value }}</a>
+                      </v-list-item-subtitle>
+                    </v-list-item-content>
+                    <v-list-item-action>
+                      <v-tooltip top>
+                        <template v-slot:activator="{ on, attrs }">
+                          <v-icon color="grey lighten-1" v-bind="attrs" v-on="on">mdi-information</v-icon>
+                        </template>
+                        <span>Ultima atualização: {{ $formatDate(sensor.updatedAt) }}</span>
+                      </v-tooltip>
+                    </v-list-item-action>
+                  </v-list-item>
+
+                </v-list>
+              </v-card>
+            </v-col>
+          </template>
         </v-col>
-        <v-col cols="12">
+        <v-col cols="8">
           <v-card class="p-0 " rounded="lg" style="height: 100%;" :loading="is_loading">
             <v-card-title>
               Histórico
@@ -59,18 +91,18 @@
               <v-icon large color="black">mdi-history</v-icon>
             </v-card-title>
             <v-card-text class="d-flex align-center justify-center text-h4" style="color: black;">
-              <v-virtual-scroll :items="histories" :item-height="50" height="300">
+              <v-virtual-scroll :items="histories" :item-height="50" height="500">
                 <template v-slot:default="{ item }">
                   <v-list-item>
                     <v-list-item-avatar>
                       <v-avatar size="56" class="white--text">
-                        <v-icon>{{ $getIconBySensor(item.key) }}</v-icon>
+                        <v-icon>{{ $getIconBySensor(item.sensor.key) }}</v-icon>
                       </v-avatar>
                     </v-list-item-avatar>
 
                     <v-list-item-content>
                       <v-list-item-title>
-                        {{ item.value }} {{ $getUnitBySensor(item.key) }}
+                        {{ $formatNumber(item.value, item.sensor.key) }} {{ $getUnitBySensor(item.sensor.key) }}
                       </v-list-item-title>
                     </v-list-item-content>
 
@@ -87,6 +119,9 @@
             </v-card-actions>
           </v-card>
         </v-col>
+      </v-row>
+      <v-row>
+
       </v-row>
 
     </v-dialog>
@@ -106,16 +141,23 @@ export default {
   props: ['environment_tmp'],
   mounted() {
     this.loading = true;
+    console.log(this.environment_tmp);
     this.environment = this.environment_tmp;
 
-    this.socket = io('http://localhost:8001');
+    this.sensors = this.environment.sensors;
+    this.socket = io(this.$config.sockerUrl);
     this.socket.emit('joinEnvironment', this.environment.key);
     this.getHistory();
 
     this.socket.on('environmentUpdated', (data) => {
       this.is_loading = true;
       if (data) {
-        this.environment = data;
+        if (data.environmentId) {
+          this.environment = data.environment;
+        } else {
+          this.environment = data;
+          this.setSensor(data);
+        }
         this.getHistory();
       }
 
@@ -136,6 +178,18 @@ export default {
     }
   },
   methods: {
+    async setSensor(sensor) {
+      if (sensor == undefined) return
+      let s = this.sensors.find((s) => s.key == sensor.key);
+      if (!s) {
+        return;
+      }
+
+      s.current_value = sensor.current_value;
+      s.updatedAt = sensor.updatedAt;
+      s.status = sensor.status;
+      await this.getHistory(sensor);
+    },
     status(date) {
       let now = new Date()
       let last_update = new Date(date)
@@ -155,14 +209,19 @@ export default {
     },
     get_color() {
       if (this.status(this.environment?.updatedAt)) {
-        return 'success'
+        return 'blue'
       }
 
       return 'error'
     },
-    getHistory() {
-      this.$axios
-        .get(`/environments/${this.environment.id}/histories`)
+    async getHistory() {
+      if (!this.environment?.id) {
+        this.histories = [];
+        console.log('environment not found', this.environment);
+        return;
+      }
+      await this.$axios
+        .get(`environments/${this.environment.id}/histories`)
         .then((response) => {
           this.histories = response.data;
         })

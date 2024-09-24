@@ -1,10 +1,9 @@
 import Vue from "vue";
-import { Line } from "vue-chartjs/legacy";
+import { Line, Bar } from "vue-chartjs/legacy";
 import {
   Chart as ChartJS,
   Title,
   Tooltip,
-  Legend,
   BarElement,
   CategoryScale,
   LinearScale,
@@ -15,7 +14,6 @@ import {
 ChartJS.register(
   Title,
   Tooltip,
-  Legend,
   PointElement,
   BarElement,
   CategoryScale,
@@ -25,4 +23,8 @@ ChartJS.register(
 
 Vue.component("line-chart", {
   extends: Line,
+});
+
+Vue.component("bar-chart", {
+  extends: Bar,
 });
